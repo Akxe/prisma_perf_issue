@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { inspect } from 'util';
 
 const prisma = new PrismaClient();
 
@@ -70,12 +69,11 @@ async function main() {
 		})),
 	]);
 
-	console.log({
+	/*console.log({
 		offer,
 		period,
-		//	Showing first 10
-		carrierOfOffer: inspect(carrierOfOffer.slice(0, 10), { showHidden: false, depth: null, colors: true }),
-	});
+		carrierOfOffer,
+	});*/
 }
 
 main()
