@@ -1,0 +1,70 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Offer {
+  offerID Int @id @default(autoincrement()) @db.UnsignedSmallInt
+
+  periodsOfOffer PeriodsOfOffer[] @relation("offer")
+}
+
+model CarrierOfOffer {
+  offerID   Int    @db.UnsignedSmallInt
+  carrierID Int
+  shortID   Int    @db.SmallInt
+
+  carrier Carrier           @relation("carrier", fields: [carrierID], references: [carrierID], onDelete: NoAction, onUpdate: NoAction)
+  periods CarrierInPeriod[] @relation("carriersOfOffer")
+
+  @@id([offerID, carrierID])
+  @@unique([offerID, shortID])
+  @@index([carrierID])
+}
+
+model Carrier {
+  carrierID   Int     @id
+  city        String  @db.VarChar(80)
+  street      String  @db.VarChar(80)
+
+  carriersOfOffer CarrierOfOffer[] @relation("carrier")
+}
+
+model PeriodsOfOffer {
+  offerID  Int @db.UnsignedSmallInt
+  periodID Int @db.UnsignedSmallInt
+
+  period           Period            @relation(fields: [periodID], references: [periodID], onDelete: NoAction, onUpdate: NoAction)
+  offer            Offer             @relation("offer", fields: [offerID], references: [offerID], onDelete: Cascade, onUpdate: NoAction)
+  carriersInPeriod CarrierInPeriod[] @relation("carriersInPeriod")
+
+  @@id([offerID, periodID])
+  @@index([periodID])
+}
+
+model Period {
+  periodID Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  text     String @db.VarChar(45)
+
+  periodsOfOffer PeriodsOfOffer[]
+}
+
+model CarrierInPeriod {
+  offerID   Int     @db.UnsignedSmallInt
+  periodID  Int     @db.UnsignedSmallInt
+  carrierID Int
+  selected  Boolean @default(false)
+  wanted    Boolean @default(false)
+
+  periodsOfOffer  PeriodsOfOffer @relation("carriersInPeriod", fields: [offerID, periodID], references: [offerID, periodID], onDelete: Cascade, onUpdate: NoAction)
+  carriersOfOffer CarrierOfOffer @relation("carriersOfOffer", fields: [offerID, carrierID], references: [offerID, carrierID], onDelete: Cascade, onUpdate: NoAction)
+
+
+  @@id([offerID, periodID, carrierID])
+  @@index([offerID, periodID])
+  @@index([offerID, carrierID])
+}
