@@ -11,8 +11,16 @@ const prisma = new PrismaClient({
 
 prisma.$on('query', (e) => {
 	const tableName = /^SELECT .+? FROM `[a-zA-Z_]+`\.`([a-zA-Z_]+)`/.exec(e.query)?.[1] ?? 'Unknown table';
-	console.log(`[${new Date(e.timestamp).toLocaleString()}] @ table "${tableName}" took ${e.duration}ms`);
+	console.log(`[${new Date(e.timestamp).toLocaleString()}] @ table "${tableName}" ${'.'.repeat(maxTableNameLength + 3 - tableName.length)} ${e.duration}ms`);
 });
+
+const maxTableNameLength = Object.keys(prisma).filter(key => !(key.startsWith('$') || key.startsWith('_'))).reduce((maxLength, str) => {
+	if (str.length > maxLength) {
+		return str.length;
+	}
+
+	return maxLength;
+}, 0);
 
 // A `main` function so that you can use async/await
 async function main() {
