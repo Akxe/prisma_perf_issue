@@ -1,23 +1,24 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+	log: [
+		{
+			emit: 'event',
+			level: 'query',
+		},
+	],
+});
 
-function timePromise<T>(description: string, promise: T | Promise<T>): Promise<T> {
-	if (!(promise instanceof Promise)) {
-		promise = Promise.resolve(promise);
-	}
-
-	console.time(description);
-	promise.finally(() => console.timeEnd(description));
-
-	return promise;
-}
+prisma.$on('query', (e) => {
+	const tableName = /^SELECT .+? FROM `[a-zA-Z_]+`\.`([a-zA-Z_]+)`/.exec(e.query)?.[1] ?? 'Unknown table';
+	console.log(`[${new Date(e.timestamp).toLocaleString()}] @ table "${tableName}" took ${e.duration}ms`);
+});
 
 // A `main` function so that you can use async/await
 async function main() {
 	const offerIDs = [1];
 	const [offer, period, carrierOfOffer] = await Promise.all([
-		timePromise('offer', prisma.offer.findMany({
+		prisma.offer.findMany({
 			select: {
 				offerID: true,
 			},
@@ -26,8 +27,8 @@ async function main() {
 					in: offerIDs,
 				},
 			},
-		})),
-		timePromise('period', prisma.period.findMany({
+		}),
+		prisma.period.findMany({
 			select: {
 				periodID: true,
 				text: true,
@@ -41,8 +42,8 @@ async function main() {
 					},
 				},
 			},
-		})),
-		timePromise('carrierOfOffer', prisma.carrierOfOffer.findMany({
+		}),
+		prisma.carrierOfOffer.findMany({
 			select: {
 				offerID: true,
 				carrierID: true,
@@ -66,7 +67,7 @@ async function main() {
 					in: offerIDs,
 				},
 			},
-		})),
+		}),
 	]);
 
 	/*console.log({
