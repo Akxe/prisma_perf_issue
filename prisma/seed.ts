@@ -27,6 +27,19 @@ async function asyncForEach<T>(arr: T[], callback: (item: T[], index: number) =>
 	}
 }
 
+function uniqueRandom<T>(randomFn: () => T): () => T {
+	const usedUnique = new Set<T>();
+	return () => {
+		let newUnique = randomFn();
+		while (usedUnique.has(newUnique)) {
+			newUnique = randomFn();
+		}
+
+		usedUnique.add(newUnique);
+		return newUnique;
+	};
+}
+
 // A `main` function so that you can use async/await
 async function main() {
 	await Promise.all([
@@ -73,17 +86,20 @@ async function main() {
 
 		//	Needed average of 35
 		const numberOfCarrierInOffer = carrierCountInOffer[offerID - 1] ?? datatype.number({ min: 10, max: 60 });
+		const uniqueFactory = uniqueRandom(() => datatype.number(rowCounts.carrier));
+		const carriersOfOffer = Array.from({ length: numberOfCarrierInOffer }, uniqueFactory);
 
+		//	Needed average of 9
 		const periodsOfOffer = Array.from({ length: datatype.number({ min: 6, max: 12 }), }, (_, index) => {
 			const periodID = startPeriodID + index;
 
 			return {
 				periodsOfOffer: { offerID, periodID },
-				carrierInPeriod: Array.from({ length: numberOfCarrierInOffer }, (_, index) => {
+				carrierInPeriod: carriersOfOffer.map(carrierID => {
 					return {
 						offerID,
 						periodID,
-						carrierID: startPeriodID + index,
+						carrierID,
 
 						selected: datatype.boolean(),
 						wanted: datatype.boolean(),
@@ -93,12 +109,11 @@ async function main() {
 		});
 
 		return {
-			//	Needed average of 9
 			periodsOfOffer: periodsOfOffer.flatMap(res => res.periodsOfOffer),
-			carrierOfOffer: Array.from({ length: numberOfCarrierInOffer }, (_, index) => {
+			carrierOfOffer: carriersOfOffer.map((carrierID, index) => {
 				return {
 					offerID,
-					carrierID: startPeriodID + index,
+					carrierID,
 					shortID: index + 1,
 				};
 			}),
